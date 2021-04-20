@@ -3,6 +3,18 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
+    '''
+    - Load the messages and categories datasets from csv files into dataframes
+    - Merge the messages and categories datasets using the common id
+
+            Parameters:
+                    messages_filepath (str): Messages dataset file path
+                    categories_filepath (str): Categories dataset file path
+
+            Returns:
+                    df (dataframe): Dataframe of combined datasets
+    '''
+    
     # load messages dataset
     messages = pd.read_csv(messages_filepath, encoding='utf-8')
     
@@ -15,6 +27,20 @@ def load_data(messages_filepath, categories_filepath):
     return df
 
 def clean_data(df):
+    '''
+    Cleans the data:
+       - Split the values in the categories column on the ; character so that each value becomes a separate column
+       - Create column names for the categories data
+       - Rename columns of categories with new column names
+       - Convert category values to numbers 0 or 1
+       - Drop duplicates
+
+            Parameters:
+                    df (dataframe): Dataframe of combined messages and categories
+
+            Returns:
+                    df (dataframe): Clean dataframe
+    '''
     # create a dataframe of the 36 individual category columns
     categories = pd.DataFrame(df['categories'].str.split(';', expand=True))
     
@@ -50,7 +76,15 @@ def clean_data(df):
     return df
 
 def save_data(df, database_filename):
-#     engine = create_engine(database_filename)
+    '''
+    Save the clean dataset into an sqlite database
+
+            Parameters:
+                    df (dataframe): Clean dataframe
+                    database_filename (str): Sqlite database file path
+
+    '''
+
     engine = create_engine('sqlite:///{}'.format(database_filename))
     df.to_sql('LabeledMessages', engine, index=False)
 
