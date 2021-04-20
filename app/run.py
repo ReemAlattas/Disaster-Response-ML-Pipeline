@@ -2,8 +2,15 @@ import json
 import plotly
 import pandas as pd
 
+import re
+import nltk
+
+nltk.download('stopwords')
+
+from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
+from nltk.stem.porter import PorterStemmer
 
 from flask import Flask
 from flask import render_template, request, jsonify
@@ -15,15 +22,32 @@ from sqlalchemy import create_engine
 app = Flask(__name__)
 
 def tokenize(text):
-    tokens = word_tokenize(text)
-    lemmatizer = WordNetLemmatizer()
+    '''
+    tokenization function to process disaster messages
 
-    clean_tokens = []
-    for tok in tokens:
-        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
-        clean_tokens.append(clean_tok)
+            Parameters:
+                    text (str): A disaster message
 
-    return clean_tokens
+            Returns:
+                    tokens (list of str): A list of normalized and lemmatized tokens
+    '''
+    # Normalize text  
+    text = text.strip()
+    text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+    
+    # Tokenize text 
+    tokens = word_tokenize(text) 
+    
+    # Remove stop words 
+    tokens = [t for t in tokens if t not in stopwords.words("english")] 
+    
+    # Lemmatization - Reduce words to their root form 
+    tokens = [WordNetLemmatizer().lemmatize(t) for t in tokens]
+    
+    # Stemming - Reduce words to their stems
+    tokens = [PorterStemmer().stem(t) for t in tokens]
+
+    return tokens
 
 # load data
 engine = create_engine('sqlite:///../data/DisasterResponse.db')
@@ -32,20 +56,83 @@ df = pd.read_sql_table('LabeledMessages', engine)
 # load model
 model = joblib.load("../models/classifier.pkl")
 
-
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
     
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
+    related_counts = df.related.value_counts()
+    related_names = ['related', 'not related']
+    
+    request_counts = list(df[df.columns[5:7]].sum())
+    request_names = df.columns[5:7]
+    
+    category_df = df[df.columns[7:]].sum()
+    category_counts = list(category_df.sort_values(ascending=False))
+    category_names = df.columns[7:]
+    
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
-    
+        
     # create visuals
     # TODO: Below is an example - modify to create your own visuals
     graphs = [
+        {
+            'data': [
+                Bar(
+                    x=related_names,
+                    y=related_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Disaster Related Messages',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Related"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=request_names,
+                    y=request_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Request vs Offer Messages',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Requests"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=category_names,
+                    y=category_counts
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of Message Categories',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Features",
+                    'tickangle':315
+                }
+            }
+        },
         {
             'data': [
                 Bar(
