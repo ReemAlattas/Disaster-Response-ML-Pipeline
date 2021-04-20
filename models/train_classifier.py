@@ -82,7 +82,7 @@ def build_model():
     Build machine learning pipeline
 
             Returns:
-                    model (class):  ML pipeline for predicting multiple target variables
+                    cv (class):  ML pipeline for predicting multiple target variables
     '''
     model = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
@@ -90,7 +90,14 @@ def build_model():
         ('clf', MultiOutputClassifier(RandomForestClassifier()))
     ])
     
-    return model
+    parameters = {
+        'vect__max_df': (0.5, 0.75, 1.0),
+        'tfidf__use_idf': (True, False),
+    }
+
+    cv = GridSearchCV(model, param_grid=parameters)
+    
+    return cv
     
 
 def evaluate_model(model, X_test, Y_test, category_names):
