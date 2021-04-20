@@ -26,7 +26,19 @@ from sklearn.metrics import classification_report
 
 
 def load_data(database_filepath):
-#     engine = create_engine(database_filepath)
+    '''
+    - Load dataset from sqlite database
+    - Define feature and target variables X and Y
+
+            Parameters:
+                    database_filepath (str): Sqlite database file path
+
+            Returns:
+                    X (dataframe): Feature variable
+                    Y (dataframe): Target variable
+                    Y.columns (list of str): Target column names
+    ''' 
+
     engine = create_engine('sqlite:///{}'.format(database_filepath))
     df = pd.read_sql("SELECT * FROM LabeledMessages", engine)
 
@@ -37,6 +49,15 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    '''
+    tokenization function to process disaster messages
+
+            Parameters:
+                    text (str): A disaster message
+
+            Returns:
+                    tokens (list of str): A list of normalized and lemmatized tokens
+    '''
     # Normalize text  
     text = text.strip()
     text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
@@ -57,6 +78,12 @@ def tokenize(text):
 
 
 def build_model():
+    '''
+    Build machine learning pipeline
+
+            Returns:
+                    model (class):  ML pipeline for predicting multiple target variables
+    '''
     model = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
@@ -67,12 +94,28 @@ def build_model():
     
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    '''
+    Report the f1 score, precision and recall for each output category of the dataset
+
+            Parameters:
+                    model (class): ML pipeline for predicting multiple target variables
+                    X_test (str): Feature variable test set
+                    Y_test (str): Target variable test set
+                    category_names (list of str): Column names of target variable test set
+    '''
     Y_pred = model.predict(X_test)
     
     print(classification_report(Y_test, Y_pred, target_names=category_names))
 
 
 def save_model(model, model_filepath):
+    '''
+    Exports the model as a pickle file
+
+            Parameters:
+                    model (class): ML pipeline for predicting multiple target variables
+                    model_filepath (str): Output pickle file path
+    '''
     pickle.dump(model, open(model_filepath, 'wb'))
 
 
